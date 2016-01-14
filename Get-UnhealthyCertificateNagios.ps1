@@ -35,11 +35,13 @@
 
 .NOTES
    Created by: Jason Wasser
-   Modified: 10/12/2015 11:07:58 AM  
+   Modified: 1/14/2016 10:17:58 AM 
 
-   Version 1.4
+   Version 1.5
 
    Changelog:
+    v 1.5
+     * fixed - missing $WarningKeySize and $CriticalKeySize when calling Get-CertificateHealth
     v 1.4
      * Added key size check
     v 1.3
@@ -112,7 +114,7 @@ function Get-UnhealthyCertificateNagios
     
         # Get the certificates from the specified computer.
         try {
-            $Certificates = Get-CertificateHealth -Path $Path -WarningDays $WarningDays -CriticalDays $CriticalDays -WarningAlgorithm $WarningAlgorithm -CriticalAlgorithm $CriticalAlgorithm -ExcludedThumbprint $ExcludedThumbprint -Recurse:([bool]$Recurse.IsPresent) -ErrorAction Stop
+            $Certificates = Get-CertificateHealth -Path $Path -WarningDays $WarningDays -CriticalDays $CriticalDays -WarningAlgorithm $WarningAlgorithm -CriticalAlgorithm $CriticalAlgorithm -ExcludedThumbprint $ExcludedThumbprint -WarningKeySize $WarningKeySize -CriticalKeySize $CriticalKeySize -Recurse:([bool]$Recurse.IsPresent) -ErrorAction Stop
             }
         # Catch all exceptions
         catch {
