@@ -191,7 +191,7 @@ function Get-CertificateHealth
                     if ($CriticalAlgorithm -contains $Certificate.SignatureAlgorithm) {
                         Write-Verbose "Certificate uses critical algorithm."
                         $AlgorithmStatus = 'Critical'
-                        $AlgorithmStatusMessage = "Certificate uses a vunlerable algorithm $($Certificate.SignatureAlgorithm)."
+                        $AlgorithmStatusMessage = "Certificate uses a vulnerable algorithm $($Certificate.SignatureAlgorithm)."
                         }
                     elseif ($WarningAlgorithm -contains $Certificate.SignatureAlgorithm) {
                         Write-Verbose "Certificate uses warning algorithm."
