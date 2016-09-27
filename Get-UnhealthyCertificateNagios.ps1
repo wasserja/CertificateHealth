@@ -29,6 +29,11 @@
    
    PSCheckCertificate=cmd /c echo Import-Module scripts\CertificateHealth\CertificateHealth.psm1 ; Get-UnhealthyCertificateNagios ; exit($lastexitcode) | powershell.exe -command -
 
+   If you'd like to create a global exclusion list to not be monitored, add them to the 
+   ExcludedThumbprint.txt at the root of the module and set your nsclient.ini to below: 
+
+   PSCheckCertificate=cmd /c echo Import-Module scripts\CertificateHealth\CertificateHealth.psm1 ; Get-UnhealthyCertificateNagios -ExcludedThumbprint $ExcludedThumbprint ; exit($lastexitcode) | powershell.exe -command -
+
    Create a nagios service check:
    $USER1$/check_nrpe -H $HOSTADDRESS$ -u -t 90 -c $ARG1$
    ($ARG1$ = PSCheckCertificate)

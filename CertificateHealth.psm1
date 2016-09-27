@@ -27,6 +27,8 @@ if (Test-Path $ExcludedThumbprintFilePath) {
     $global:ExcludedThumbprint = Get-Content -Path $ExcludedThumbprintFilePath
     
     # Setting default parameter.
-    $PSDefaultParameterValues.remove("*:ExcludedThumbprint")
-    $PSDefaultParameterValues.Add("Get-UnhealthyCertificate:ExcludedThumbprint",$ExcludedThumbprint)
+    if ($PSVersionTable.PSVersion.Major -ge 3) {
+        $PSDefaultParameterValues.remove("*:ExcludedThumbprint")
+        $PSDefaultParameterValues.Add("Get-UnhealthyCertificate:ExcludedThumbprint",$ExcludedThumbprint)
+        }
     }
