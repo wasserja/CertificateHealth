@@ -11,11 +11,13 @@
 
 .NOTES
    Created by: Jason Wasser
-   Modified: 10/12/2015 11:01:04 AM   
+   Modified: 9/28/2016 11:24:57 AM    
 
-   Version 1.5
+   Version 1.6
 
    Changelog:
+    v 1.6
+     * Added remote computer support through PSRP
     v 1.5
      * Added certificate key size health check
     v 1.4
@@ -28,8 +30,7 @@
     v 1.0
      * Initial Script
 .PARAMETER ComputerName
-    Specify a remote computer or default to local computer. 
-    Remote computer not yet supported.
+    Specify a remote computer. 
 .PARAMETER WarningDays
     Specify the amount of days before the certificate expiration should be in 
     warning state.
@@ -66,13 +67,12 @@ function Get-UnhealthyCertificate
     [CmdletBinding()]
     Param
     (
-        [Parameter(Mandatory=$false,
-                    ValueFromPipelineByPropertyName=$true,
-                    Position=0)]
-        [string]$ComputerName=$env:COMPUTERNAME,
+        [Parameter(ValueFromPipelineByPropertyName=$true)]
+        [string[]]$Path = 'Cert:\LocalMachine\My',
+        [Parameter(ValueFromPipelineByPropertyName=$true)]
+        [string]$ComputerName,
         [int]$WarningDays = 60,
         [int]$CriticalDays = 30,
-        [string[]]$Path = 'Cert:\LocalMachine\My',
         [string[]]$ExcludedThumbprint,#=@('DFE816240B40151BBCD7529D4C55627A8CE1671C')
         [string[]]$WarningAlgorithm=('sha1RSA'),
         [string[]]$CriticalAlgorithm=('md5RSA'),
@@ -89,11 +89,11 @@ function Get-UnhealthyCertificate
     
         # Get the certificates from the specified computer.
         try {
-            $Certificates = Get-CertificateHealth -Path $Path -WarningDays $WarningDays -CriticalDays $CriticalDays -WarningAlgorithm $WarningAlgorithm -CriticalAlgorithm $CriticalAlgorithm -CriticalKeySize $CriticalKeySize -WarningKeySize $WarningKeySize -ExcludedThumbprint $ExcludedThumbprint -Recurse:([bool]$Recurse.IsPresent) -ErrorAction Stop
+            $Certificates = Get-CertificateHealth -Computer $ComputerName -Path $Path -WarningDays $WarningDays -CriticalDays $CriticalDays -WarningAlgorithm $WarningAlgorithm -CriticalAlgorithm $CriticalAlgorithm -CriticalKeySize $CriticalKeySize -WarningKeySize $WarningKeySize -ExcludedThumbprint $ExcludedThumbprint -Recurse:([bool]$Recurse.IsPresent) -ErrorAction Stop
             }
         # Catch all exceptions
         catch {
-            Write-Output "Unable to get certificates from $ComputerName."
+            Write-Error "Unable to get certificates from $ComputerName."
             }
         # Get certificates whose validity period status or algorithm status is not OK.
         $UnhealthyCertificates = $Certificates | Where-Object -FilterScript {$_.ValidityPeriodStatus -ne 'OK' -or $_.AlgorithmStatus -ne 'OK' -or $_.KeySizeStatus -ne 'OK'}
