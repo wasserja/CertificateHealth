@@ -31,6 +31,8 @@
    Modified: 10/12/2015 10:56:31 AM 
 
    Changelog:
+   Version 1.3
+    * Added support for remote computer check for cert:\ provider using PSRP.
    Version 1.2
     * Added key size health properties
    Version 1.1
@@ -40,6 +42,9 @@
 
 .PARAMETER Path
    Enter a path or paths containing certificates to be checked.
+   Checking of remote certificate files should be done through UNC path. 
+.PARAMETER ComputerName
+   Enter a name of a computer to check the certificate store provider via PSRP.
 .PARAMETER WarningDays
    Specify the amount of days before the certificate expiration should be in a
    warning state.
@@ -67,6 +72,25 @@
    Recurse through subdirectories of specified path(s).
 .EXAMPLE
    Get-CertificateHealth
+
+    FileName                    : Microsoft.PowerShell.Security\Certificate::LocalMachine\My\27AC9369FAF25207
+                                  BB2627CEFACCBE4EF9C319B8
+    Subject                     : CN=Go Daddy Secure Certificate Authority - G2,
+                                  OU=http://certs.godaddy.com/repository/, O="GoDaddy.com, Inc.",
+                                  L=Scottsdale, S=Arizona, C=US
+    SignatureAlgorithm          : sha256RSA
+    NotBefore                   : 5/3/2011 3:00:00 AM
+    NotAfter                    : 5/3/2031 3:00:00 AM
+    Days                        : 5329
+    Thumbprint                  : 27AC9369FAF25207BB2627CEFACCBE4EF9C319B8
+    ValidityPeriodStatus        : OK
+    ValidityPeriodStatusMessage : Certificate expires in 5329 days.
+    AlgorithmStatus             : OK
+    AlgorithmStatusMessage      : Certificate uses valid algorithm sha256RSA.
+    KeySize                     : 2048
+    KeySizeStatus               : OK
+    KeySizeStatusMessage        : Certificate key size 2048 is greater than or equal to 2048.
+
    Gets all the certificates in the local machine personal certificate store (cert:\LocalMachine\My)
    and shows their basic information and health.
 .EXAMPLE
@@ -86,10 +110,9 @@ function Get-CertificateHealth
     [CmdletBinding()]
     Param
     (
-        [Parameter(Mandatory=$false,
-                    ValueFromPipelineByPropertyName=$true,
-                    Position=0)]
+        [Parameter(ValueFromPipelineByPropertyName=$true)]
         [string[]]$Path = 'Cert:\LocalMachine\My',
+        [string]$ComputerName,
         [int]$WarningDays = 60,
         [int]$CriticalDays = 30,
         [string[]]$ExcludedThumbprint,#=@('DF16240B462E80151BBCD7529D4C557A8CE1671C'),
@@ -110,10 +133,27 @@ function Get-CertificateHealth
         #region Certificate Check
         foreach ($CertPath in $Path) {
             # Gather certificates from the $CertPath
-            # If we are looking in the Certificate Providor - Cert:\
+            # If we are looking in the Certificate PowerShell Provider - Cert:\
             if ($CertPath -like 'cert:\*') {
-                Write-Verbose "Getting certificates from $CertPath"
-                $Certificates = Get-ChildItem -Path $CertPath -Recurse:([bool]$Recurse.IsPresent) -Exclude $ExcludedThumbprint
+                # Remote or local
+                # If computername was specified, try to use psremoting to get the certificates.
+                if ($ComputerName) {
+                    
+                    try {
+                        Write-Verbose "Getting certificates from $CertPath from $ComputerName"
+                        $Certificates = Invoke-Command -ScriptBlock {Get-ChildItem -Path $args[0] -Recurse:([bool]$args[1].IsPresent) -Exclude $args[2]} -ComputerName $ComputerName -ArgumentList $CertPath,$Recurse,$ExcludedThumbprint -ErrorAction Stop
+                        }
+                    catch {
+                        Write-Error "Unable to connect to $ComputerName"
+                        return
+                        }                    
+                    }
+                # If computername was not specified, then get from local certificate store provider.
+                else {
+                    Write-Verbose "Getting certificates from $CertPath"
+                    $Certificates = Get-ChildItem -Path $CertPath -Recurse:([bool]$Recurse.IsPresent) -Exclude $ExcludedThumbprint
+                    $ComputerName = $env:COMPUTERNAME
+                    }
                 }
             # Otherwise we need to use the certutil.exe to get certificate information.
             else {
@@ -129,6 +169,7 @@ function Get-CertificateHealth
                     if ($Certificate.PSPath) {
                             if ($PSVersionTable.PSVersion.Major -lt 3) {
                                 $CertificateProperties = @{
+                                    ComputerName = $ComputerName
                                     FileName = $Certificate.PSPath
                                     Subject = $Certificate.Subject
                                     SignatureAlgorithm = $Certificate.SignatureAlgorithm.FriendlyName
@@ -141,6 +182,7 @@ function Get-CertificateHealth
                                 }
                             else {
                                 $CertificateProperties = [ordered]@{
+                                    ComputerName = $ComputerName
                                     FileName = $Certificate.PSPath
                                     Subject = $Certificate.Subject
                                     SignatureAlgorithm = $Certificate.SignatureAlgorithm.FriendlyName
@@ -236,6 +278,7 @@ function Get-CertificateHealth
                     Write-Verbose 'Adding additional properties to the certificate object.'
                     if ($PSVersionTable.PSVersion.Major -lt 3) {
                         $CertificateProperties = @{
+                            ComputerName = $ComputerName
                             FileName = $Certificate.Filename
                             Subject = $Certificate.Subject
                             SignatureAlgorithm = $Certificate.SignatureAlgorithm
@@ -254,6 +297,7 @@ function Get-CertificateHealth
                         }
                     else {
                         $CertificateProperties = [ordered]@{
+                            ComputerName = $ComputerName
                             FileName = $Certificate.Filename
                             Subject = $Certificate.Subject
                             SignatureAlgorithm = $Certificate.SignatureAlgorithm
@@ -273,7 +317,7 @@ function Get-CertificateHealth
                     
                     $Certificate = New-Object -TypeName PSObject -Property $CertificateProperties
                     if ($PSVersionTable.PSVersion.Major -lt 3) {
-                        $Certificate | Select-Object FileName,Subject,SignatureAlgorithm,NotBefore,NotAfter,Days,Thumbprint,ValidityPeriodStatus,ValidityPeriodStatusMessage,AlgorithmStatus,AlgorithmStatusMessage,KeySize,KeySizeStatus,KeySizeStatusMessage
+                        $Certificate | Select-Object ComputerName,FileName,Subject,SignatureAlgorithm,NotBefore,NotAfter,Days,Thumbprint,ValidityPeriodStatus,ValidityPeriodStatusMessage,AlgorithmStatus,AlgorithmStatusMessage,KeySize,KeySizeStatus,KeySizeStatusMessage
                         }
                     else {
                         $Certificate

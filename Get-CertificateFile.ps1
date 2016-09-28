@@ -41,9 +41,7 @@ function Get-CertificateFile
     [CmdletBinding()]
     Param
     (
-        [Parameter(Mandatory=$false,
-                    ValueFromPipeline=$true,
-                    Position=0)]
+        [Parameter(ValueFromPipeline=$true)]
         [string[]]$Path = '.',
         [string]$CertUtilPath = 'C:\Windows\System32\certutil.exe',
         [string[]]$CertificateFileType = ('*.cer','*.crt','*.p7b'),
@@ -56,8 +54,10 @@ function Get-CertificateFile
     Process
     {
         foreach ($CertPath in $Path) {
+            
             # Gather certificates from the $CertPath
             if (Test-Path -Path $CertPath) {
+                
                 Write-Verbose "$CertPath exists. Checking for certificate files."
                 
                 # Get certificate files from a supplied path. Currently requires a folder. 
