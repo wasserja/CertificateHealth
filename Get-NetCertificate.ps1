@@ -14,6 +14,7 @@ Inspiration
 https://isc.sans.edu/forums/diary/Assessing+Remote+Certificates+with+Powershell/20645/
 
 Modified: 1/9/2020 02:16:05 PM 
+# Need to verify if this supports server name indication (SNI) for certificates
 #>
 function Get-NetCertificate {
     Param (

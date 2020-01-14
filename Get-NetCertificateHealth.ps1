@@ -116,7 +116,7 @@ function Get-NetCertificateHealth {
     #endregion
     Write-Verbose 'Adding additional properties to the certificate object.'
     $CertificateProperties = [ordered]@{
-        ComputerName                = $Certificate.ComputerName
+        ComputerName                = $ComputerName + ':' + $Port
         FileName = $Certificate.FileName
         Subject                     = $Certificate.Subject
         SignatureAlgorithm          = $Certificate.SignatureAlgorithm
