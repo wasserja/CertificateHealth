@@ -3,6 +3,10 @@
 Get the TLS certificate from a remote server.
 .DESCRIPTION
 Obtain the TLS certificate from a remote server by name or IP address and TCP port.
+.PARAMETER ComputerName
+Specify the DNS name or IP address of the URL you want to query.
+.PARAMETER Port
+Specify the port of the destination server.
 .EXAMPLE
 Get-NetCertificate -ComputerName www.google.com -Port 443
 .EXAMPLE

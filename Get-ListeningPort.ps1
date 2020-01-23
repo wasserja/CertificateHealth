@@ -1,4 +1,21 @@
-# Enumerate Local Listening Ports
+<#
+.Synopsis
+Enumerate local listening ports.
+.DESCRIPTION
+Enumerate all of the local listening ports on a computer (IPv4 only). Requires command Get-NetTCPConnection.
+.PARAMETER Ports
+The Ports parameter is defaulted to a list of popular server ports.
+.EXAMPLE
+Get-ListeningPort
+LocalAddress                        LocalPort RemoteAddress                       RemotePort State       AppliedSetting OwningProcess 
+------------                        --------- -------------                       ---------- -----       -------------- -------------
+0.0.0.0                             3389      0.0.0.0                             0          Listen                     1116
+.EXAMPLE
+Get-ListeningPort -Ports 80,443
+.NOTES
+Created by: Jason Wasser
+Modified: 1/23/2020
+#>
 function Get-ListeningPort {
     param (
         $Ports = @(22,25,443,465,587,636,993,995,3389)

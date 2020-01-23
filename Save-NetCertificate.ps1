@@ -3,6 +3,12 @@
 Save the TLS certificate from a remote server as a certificate file.
 .DESCRIPTION
 Obtain the TLS certificate from a remote server by name or IP address and TCP port and save it to disk.
+.PARAMETER ComputerName
+Specify the DNS name or IP address of the URL you want to query.
+.PARAMETER Port
+Specify the port of the destination server.
+.PARAMETER Path
+Specify the path to save the certificate.
 .EXAMPLE
 Save-NetCertificate -ComputerName www.google.com -Port 443 -Path C:\Temp\server.crt
 .EXAMPLE
@@ -24,5 +30,8 @@ function Save-NetCertificate {
 
     $Certificate = Get-NetCertificate -ComputerName $ComputerName -Port $Port
     [byte[]]$CertificateInBytes = $Certificate.Export('Cert')
-    Set-Content -Path $Path -Value $CertificateInBytes -Encoding Byte
+    if (!(Test-Path -Path $Path)) {
+        New-Item -Path $Path -ItemType File -Force
+    }
+    Set-Content -Path $Path -Value $CertificateInBytes -Encoding Byte -Force
 }
