@@ -21,11 +21,13 @@ https://isc.sans.edu/forums/diary/Assessing+Remote+Certificates+with+Powershell/
 Modified: 1/9/2020 02:16:05 PM 
 #>
 function Save-NetCertificate {
+    [cmdletbinding()]
     Param (
+        [Parameter(Mandatory = $true)]
         [Alias('IP')]
-        $ComputerName,
-        [int]$Port=443,
-        $Path = 'C:\Scratch\certificate.cer'
+        [string]$ComputerName,
+        [int]$Port = 443,
+        [string]$Path = 'C:\Scratch\certificate.cer'
     )
 
     $Certificate = Get-NetCertificate -ComputerName $ComputerName -Port $Port
@@ -33,5 +35,12 @@ function Save-NetCertificate {
     if (!(Test-Path -Path $Path)) {
         New-Item -Path $Path -ItemType File -Force
     }
-    Set-Content -Path $Path -Value $CertificateInBytes -Encoding Byte -Force
+    switch ($PSVersionTable.PSEdition) {
+        'Desktop' {
+            Set-Content -Path $Path -Value $CertificateInBytes -Encoding Byte -Force
+        }
+        'core' {
+            Set-Content -Path $Path -Value $CertificateInBytes -AsByteStream -Force
+        }
+    }
 }
