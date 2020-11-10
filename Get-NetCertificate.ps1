@@ -17,8 +17,11 @@ Original code by: Rob VandenBrink
 Inspiration
 https://isc.sans.edu/forums/diary/Assessing+Remote+Certificates+with+Powershell/20645/
 
-Modified: 1/9/2020 02:16:05 PM 
+Modified: 1/9/2020 02:16:05 PM
 # Need to verify if this supports server name indication (SNI) for certificates
+Modified: 11/10/2020
+Reconciled use of $TCPClient and $TcpSocket
+Comments added at change locations for integration
 #>
 function Get-NetCertificate {
     Param (
@@ -27,11 +30,14 @@ function Get-NetCertificate {
         [int]$Port=443
     )
 
-    $TCPClient = New-Object -TypeName System.Net.Sockets.TCPClient
+    #Commenting this out because it isn't actually used
+    #$TCPClient = New-Object -TypeName System.Net.Sockets.TCPClient
     try {
-        $TcpSocket = New-Object Net.Sockets.TcpClient($ComputerName, $Port)
+        #Adding typename parameter and fully qualifying TcpClient
+        $TcpSocket = New-Object -TypeName System.Net.Sockets.TcpClient($ComputerName, $Port)
         $tcpstream = $TcpSocket.GetStream()
-        $Callback = { param($sender, $cert, $chain, $errors) return $true }
+        #$sender is flagged by VSCode as an automatic variable and recommends changing it. Changed to caller and functionality seems undeminished
+        $Callback = { param($caller, $cert, $chain, $errors) return $true }
         $SSLStream = New-Object -TypeName System.Net.Security.SSLStream -ArgumentList @($tcpstream, $True, $Callback)
         try {
             $SSLStream.AuthenticateAsClient($ComputerName)
@@ -42,7 +48,8 @@ function Get-NetCertificate {
         }
     }
     finally {
-        $TCPClient.Dispose()
+        #Changing following from TCPClient to TcpSocket since that is what is actually used
+        $TcpSocket.Dispose()
     }
     Write-Output $Certificate
 }

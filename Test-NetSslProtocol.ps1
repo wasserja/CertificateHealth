@@ -13,7 +13,10 @@ Test-NetSslProtocol -ComputerName www.google.com -Port 443
 Test-NetSslProtocol -IP 8.8.8.8 -Port 853
 .NOTES
 Created by: Jason Wasser
-Modified: 4/3/2020
+Modified: 11/10/2020
+Reconciled use of $TCPClient and $TcpSocket
+Comments added at change locations for integration
+
 #>
 
 function Test-NetSslProtocol {
@@ -27,7 +30,8 @@ function Test-NetSslProtocol {
         [string[]]$Protocol = ('ssl2', 'ssl3', 'tls', 'tls11', 'tls12', 'tls13')
     )
     begin {
-        $TCPClient = New-Object -TypeName System.Net.Sockets.TCPClient
+        #Commenting this out because it isn't actually used
+        #$TCPClient = New-Object -TypeName System.Net.Sockets.TCPClient
     }
     process {
         foreach ($Computer in $ComputerName) {
@@ -35,9 +39,11 @@ function Test-NetSslProtocol {
                 foreach ($CurrentProtocol in $Protocol) {
                     Write-Verbose "Testing $CurrentProtocol on ${Computer}:$Port"
                     try {
-                        $TcpSocket = New-Object Net.Sockets.TcpClient($Computer, $CurrentPort)
+                        #Adding typename parameter and fully qualifying TcpClient
+                        $TcpSocket = New-Object -TypeName System.Net.Sockets.TcpClient($Computer, $CurrentPort)
                         $tcpstream = $TcpSocket.GetStream()
-                        $Callback = { param($sender, $cert, $chain, $errors) return $true }
+                        #$sender is flagged by VSCode as an automatic variable and recommends changing it. Changed to caller and functionality seems undeminished
+                        $Callback = { param($caller, $cert, $chain, $errors) return $true }
                         $SSLStream = New-Object -TypeName System.Net.Security.SSLStream -ArgumentList @($tcpstream, $True, $Callback)
                         try {
                             $SSLStream.AuthenticateAsClient($Computer, $null, $CurrentProtocol, $false)
@@ -55,7 +61,8 @@ function Test-NetSslProtocol {
                         break
                     }
                     finally {
-                        $TCPClient.Dispose()
+                        #Changing following from TCPClient to TcpSocket since that is what is actually used
+                        $TcpSocket.Dispose()
                     }
                     if ($ProtocolStatus) {
                         $NetSslProtocolProperties = [ordered]@{
@@ -70,7 +77,7 @@ function Test-NetSslProtocol {
                     }
                 }
             }
-        }   
+        }
     }
     end { }
 }
