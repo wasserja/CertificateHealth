@@ -1,20 +1,26 @@
 <#
 .Synopsis
-Show the TLS certificate from a remote server as a certificate file.
+    Retrieve certificate from remote system and validates it against criteria
 .DESCRIPTION
-Obtain the TLS certificate from a remote server by name or IP address and TCP port and save it to disk.
+    Retrieve certificate from remote system and validates it against criteria for days until expiration, algorithm, and key size
 .EXAMPLE
-Save-NetCertificate -ComputerName www.google.com -Port 443 -Path C:\Temp\server.crt
-.EXAMPLE
-Save-NetCertificate -IP 8.8.8.8 -Port 853 -Path C:\Temp\server.crt
+    Get-NetCertificateHealth -IP 8.8.8.8
+
+    Queries 8.8.8.8 on the default port of 443 and verfies certificate doesn't expire with 60 days, uses at least SHA256RSA and has at least 2048 key size
+    It will return warning or critical results for any failing validations
 .NOTES
 Adapted by: Jason Wasser
 Original code by: Rob VandenBrink
 Inspiration
 https://isc.sans.edu/forums/diary/Assessing+Remote+Certificates+with+Powershell/20645/
-Modified: 1/9/2020 02:16:05 PM 
+Modified: 1/9/2020 02:16:05 PM
+Modified: 11/10/2020
+    Updated help from source function of Save-NetCertificate
+    Updated Verbiage in verbose statements for expired certificates
+    Added CmdletBinding So that the verbose statements are useful
 #>
 function Get-NetCertificateHealth {
+    [CmdletBinding()]
     Param (
         [Alias('IP')]
         $ComputerName,
@@ -42,7 +48,7 @@ function Get-NetCertificateHealth {
     $Certificate = New-Object -TypeName PSObject -Property $CertificateProperties
 
     #region Check certificate expiration
-                    
+
     # Check certificate is within $WarningDays
     if ($Certificate.NotAfter -le (Get-Date).AddDays($WarningDays) -and $Certificate.NotAfter -gt (Get-Date).AddDays($CriticalDays)) {
         Write-Verbose "Certificate is expiring within $WarningDays days."
@@ -57,7 +63,7 @@ function Get-NetCertificateHealth {
     }
     # Check certificate is expired
     elseif ($Certificate.NotAfter -le (Get-Date)) {
-        Write-Verbose "Certificate is expiring within $CriticalDays"
+        Write-Verbose "Certificate expired: $($Certificate.Days) days."
         $ValidityPeriodStatus = 'Critical'
         $ValidityPeriodStatusMessage = "Certificate expired: $($Certificate.Days) days."
     }
